@@ -1,0 +1,204 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 2 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSlug(slug) {
+      return slug is string && slug.size() >= 2 && slug.size() <= 80 && slug.matches('^[a-z0-9-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBootstrapAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'ahmdkhaaadd@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin() || (
+        isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Admin entity validation
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'role', 'createdAt']) &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 200 &&
+        data.role is string && data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    // Product entity validation (synchronized with firebase-blueprint.json)
+    function isValidProduct(data, slug) {
+      return data.keys().hasAll([
+          'slug', 'name', 'price', 'compareAtPrice', 'currency',
+          'description', 'features', 'images', 'isActive',
+          'createdBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'slug', 'name', 'price', 'compareAtPrice', 'currency',
+          'description', 'features', 'images', 'isActive',
+          'themeId', 'model3dUrl', 'whatsappNumber', 'stockRemaining',
+          'showCountdown', 'countdownMinutes', 'reviews', 'faqs',
+          'createdBy', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidSlug(data.slug) && data.slug == slug &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 160 &&
+        data.price is number && data.price > 0 && data.price <= 10000000 &&
+        data.compareAtPrice is number && data.compareAtPrice >= 0 && data.compareAtPrice <= 10000000 &&
+        data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16 &&
+        data.description is string && data.description.size() >= 5 && data.description.size() <= 3000 &&
+        data.features is list && data.features.size() <= 15 &&
+        (data.features.size() == 0 || (data.features[0] is string && data.features[0].size() <= 200)) &&
+        data.images is list && data.images.size() >= 1 && data.images.size() <= 10 &&
+        data.images[0] is string && data.images[0].size() >= 1 && data.images[0].size() <= 1000 &&
+        data.isActive is bool &&
+        (!('themeId' in data) || (data.themeId is string && data.themeId in ['emerald', 'sapphire', 'amber', 'rose', 'violet', 'slate'])) &&
+        (!('model3dUrl' in data) || (data.model3dUrl is string && data.model3dUrl.size() <= 1000)) &&
+        (!('whatsappNumber' in data) || (data.whatsappNumber is string && data.whatsappNumber.size() <= 25)) &&
+        (!('stockRemaining' in data) || (data.stockRemaining is number && data.stockRemaining >= 0 && data.stockRemaining <= 100000)) &&
+        (!('showCountdown' in data) || data.showCountdown is bool) &&
+        (!('countdownMinutes' in data) || (data.countdownMinutes is number && data.countdownMinutes >= 0 && data.countdownMinutes <= 10080)) &&
+        (!('reviews' in data) || (data.reviews is list && data.reviews.size() <= 10 && (data.reviews.size() == 0 || data.reviews[0] is map))) &&
+        (!('faqs' in data) || (data.faqs is list && data.faqs.size() <= 10 && (data.faqs.size() == 0 || data.faqs[0] is map))) &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Order entity validation (synchronized with firebase-blueprint.json)
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+          'orderNumber', 'productSlug', 'productName', 'unitPrice', 'currency',
+          'quantity', 'totalPrice', 'customerName', 'phone', 'governorate',
+          'address', 'notes', 'paymentMethod', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'orderNumber', 'productSlug', 'productName', 'unitPrice', 'currency',
+          'quantity', 'totalPrice', 'customerName', 'phone', 'governorate',
+          'address', 'notes', 'paymentMethod', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.orderNumber is string && data.orderNumber.size() >= 4 && data.orderNumber.size() <= 32 &&
+        data.orderNumber.matches('^ORD-[A-Z0-9-]+$') &&
+        isValidSlug(data.productSlug) &&
+        data.productName is string && data.productName.size() >= 2 && data.productName.size() <= 160 &&
+        data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 10000000 &&
+        data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16 &&
+        data.quantity is int && data.quantity >= 1 && data.quantity <= 50 &&
+        data.totalPrice is number && data.totalPrice > 0 && data.totalPrice <= 500000000 &&
+        data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 25 &&
+        data.phone.matches('^[0-9+\\-\\s()]{7,25}$') &&
+        data.governorate is string && data.governorate.size() >= 2 && data.governorate.size() <= 80 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 500 &&
+        data.notes is string && data.notes.size() <= 500 &&
+        data.paymentMethod is string && data.paymentMethod == 'cod' &&
+        data.status is string && data.status in ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Authorized Admin Registry
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && isValidId(adminUid) && (isBootstrapAdmin() || request.auth.uid == adminUid);
+      allow list: if isBootstrapAdmin();
+      allow create: if isSignedIn() && isValidId(adminUid) &&
+        isValidAdmin(incoming()) &&
+        incoming().createdAt == request.time &&
+        isBootstrapAdmin();
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(adminUid) && isBootstrapAdmin();
+    }
+
+    // Standalone Product Landing Pages (keyed by slug)
+    match /products/{slug} {
+      allow get: if isValidSlug(slug) && ((resource != null && existing().isActive == true) || isAdmin());
+      allow list: if isBootstrapAdmin();
+      allow create: if isSignedIn() &&
+        isValidSlug(slug) &&
+        isValidProduct(incoming(), slug) &&
+        incoming().createdBy == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isSignedIn() &&
+        isValidSlug(slug) &&
+        isValidProduct(incoming(), slug) &&
+        incoming().slug == existing().slug &&
+        incoming().createdBy == existing().createdBy &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['isActive', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'price', 'compareAtPrice', 'currency',
+            'description', 'features', 'images', 'isActive',
+            'themeId', 'model3dUrl', 'whatsappNumber', 'stockRemaining',
+            'showCountdown', 'countdownMinutes', 'reviews', 'faqs',
+            'updatedAt'
+          ])
+        ) &&
+        isAdmin();
+      allow delete: if isSignedIn() && isValidSlug(slug) && isAdmin();
+    }
+
+    // Customer COD Orders (Strict PII isolation — Admin-only read/list/update/delete)
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && isAdmin();
+      allow list: if isBootstrapAdmin();
+      allow create: if isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().status == 'new' &&
+        incoming().paymentMethod == 'cod' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/products/$(incoming().productSlug)) &&
+        get(/databases/$(database)/documents/products/$(incoming().productSlug)).data.isActive == true &&
+        incoming().unitPrice == get(/databases/$(database)/documents/products/$(incoming().productSlug)).data.price &&
+        math.abs(incoming().totalPrice - (incoming().unitPrice * incoming().quantity)) < 0.01;
+      allow update: if isSignedIn() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().orderNumber == existing().orderNumber &&
+        incoming().productSlug == existing().productSlug &&
+        incoming().unitPrice == existing().unitPrice &&
+        incoming().quantity == existing().quantity &&
+        incoming().totalPrice == existing().totalPrice &&
+        incoming().customerName == existing().customerName &&
+        incoming().phone == existing().phone &&
+        incoming().governorate == existing().governorate &&
+        incoming().address == existing().address &&
+        incoming().notes == existing().notes &&
+        incoming().paymentMethod == existing().paymentMethod &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        isAdmin();
+      allow delete: if isSignedIn() && isValidId(orderId) && isAdmin();
+    }
+  }
+}

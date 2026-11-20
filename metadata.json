@@ -1,0 +1,6 @@
+{
+  "name": "صفحة بيع — نظام صفحات البيع المباشر",
+  "description": "نظام مستقل لإنشاء صفحات بيع سريعة لكل منتج برابط خاص مع الدفع عند الاستلام ولوحة تحكم محمية وإشعارات طلبات لحظية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

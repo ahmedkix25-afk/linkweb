@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator account permitted to manage products and customer orders.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200,
+          "description": "Verified administrator email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"],
+          "description": "Fixed administrator role."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin entry was created."
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Standalone direct-sale product with its own dedicated Liquid Glass + 3D landing page at /p/{slug}.",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Unique URL-safe slug used as document ID and landing page route."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160,
+          "description": "Product display title in Arabic or English."
+        },
+        "price": {
+          "type": "number",
+          "description": "Current selling price (positive number, max 10000000)."
+        },
+        "compareAtPrice": {
+          "type": "number",
+          "description": "Optional pre-discount price (0 when no discount applies)."
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "description": "Currency symbol or label (e.g., ج.م, ر.س)."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 3000,
+          "description": "Concise persuasive product description."
+        },
+        "features": {
+          "type": "array",
+          "description": "Bounded list (max 15 items) of key product benefits."
+        },
+        "images": {
+          "type": "array",
+          "description": "Bounded list (1 to 10 items) of product image URLs."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the product landing page is publicly visible and accepting orders."
+        },
+        "themeId": {
+          "type": "string",
+          "enum": ["emerald", "sapphire", "amber", "rose", "violet", "slate"],
+          "description": "Optional landing page color palette preset."
+        },
+        "model3dUrl": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional GLB 3D model URL for interactive Three.js showcase."
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "maxLength": 25,
+          "description": "Optional merchant WhatsApp number for floating direct contact button."
+        },
+        "stockRemaining": {
+          "type": "number",
+          "description": "Optional remaining units display counter (0 hides scarcity indicator)."
+        },
+        "showCountdown": {
+          "type": "boolean",
+          "description": "Optional toggle to display offer countdown timer."
+        },
+        "countdownMinutes": {
+          "type": "number",
+          "description": "Duration in minutes for optional offer countdown (max 10080)."
+        },
+        "reviews": {
+          "type": "array",
+          "description": "Optional bounded list (max 10 items) of customer testimonials."
+        },
+        "faqs": {
+          "type": "array",
+          "description": "Optional bounded list (max 10 items) of FAQ accordion entries."
+        },
+        "createdBy": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "UID of the admin who created the product."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the product was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last product update."
+        }
+      },
+      "required": [
+        "slug",
+        "name",
+        "price",
+        "compareAtPrice",
+        "currency",
+        "description",
+        "features",
+        "images",
+        "isActive",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Cash-on-delivery customer order submitted from a product landing page.",
+      "type": "object",
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32,
+          "pattern": "^ORD-[A-Z0-9-]+$",
+          "description": "Human-readable order reference code."
+        },
+        "productSlug": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Slug of the ordered product."
+        },
+        "productName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160,
+          "description": "Snapshot of product name at time of order."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Verified product unit price at time of order."
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "description": "Currency symbol at time of order."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Ordered unit count (integer between 1 and 50)."
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Exact total price (unitPrice * quantity)."
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Customer full name (PII)."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 25,
+          "pattern": "^[0-9+\\-\\s()]{7,25}$",
+          "description": "Customer mobile phone number (PII)."
+        },
+        "governorate": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Delivery governorate or region (PII)."
+        },
+        "address": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 500,
+          "description": "Detailed street delivery address (PII)."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional customer delivery notes."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["cod"],
+          "description": "Payment method, strictly cash on delivery (cod)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["new", "confirmed", "shipped", "delivered", "cancelled"],
+          "description": "Fulfillment workflow status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when order was submitted."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest status change."
+        }
+      },
+      "required": [
+        "orderNumber",
+        "productSlug",
+        "productName",
+        "unitPrice",
+        "currency",
+        "quantity",
+        "totalPrice",
+        "customerName",
+        "phone",
+        "governorate",
+        "address",
+        "notes",
+        "paymentMethod",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Authorized admin UID registry."
+    },
+    "/products/{slug}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Standalone products keyed by URL slug. Active items are publicly readable by exact slug only."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer COD orders. Publicly creatable for active products with price verification; strictly admin-only readable and updatable."
+    }
+  }
+}
