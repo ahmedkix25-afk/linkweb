@@ -78,9 +78,32 @@ export default function AdminLogin() {
     try {
       await signInWithGoogle();
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code || '';
-      if (code !== 'auth/popup-closed-by-user') {
-        setErrorMsg('تعذر تسجيل الدخول عبر Google. تأكد من السماح بالنوافذ المنبثقة وحاول مجدداً.');
+      const firebaseErr = err as { code?: string; message?: string };
+      const code = firebaseErr?.code || '';
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+
+      if (code === 'auth/unauthorized-domain') {
+        setErrorMsg(
+          `الدومين الحالي (${host}) غير مضاف في Firebase Authorized Domains. افتح Firebase Console ← Authentication ← Settings ← Authorized domains وأضف: ${host}`
+        );
+      } else if (code === 'auth/popup-blocked') {
+        setErrorMsg(
+          'المتصفح منع فتح نافذة تسجيل الدخول المنبثقة (Popup Blocked). اسمح بالنوافذ المنبثقة لهذا الموقع وحاول مجدداً، أو استخدم الدخول بالإيميل والباسورد.'
+        );
+      } else if (code === 'auth/popup-closed-by-user') {
+        setInfoMsg(
+          'تم إغلاق نافذة تسجيل الدخول قبل إتمام العملية. لو أُغلقت تلقائياً، افتح الرابط في متصفح Chrome/Safari مباشرة أو اسمح بالنوافذ المنبثقة.'
+        );
+      } else if (code === 'auth/operation-not-allowed') {
+        setErrorMsg(
+          'تسجيل الدخول عبر Google غير مفعّل في Firebase Console. فعّله من Authentication ← Sign-in method ← Google.'
+        );
+      } else if (code === 'auth/network-request-failed') {
+        setErrorMsg('تعذر الاتصال بخوادم Google. تحقق من اتصال الإنترنت وحاول مجدداً.');
+      } else if (code !== 'auth/cancelled-popup-request') {
+        setErrorMsg(
+          `تعذر تسجيل الدخول عبر Google${code ? ` (${code})` : ''}. تأكد من تفعيل Google في Firebase وإضافة الدومين (${host}) في Authorized domains.`
+        );
       }
     } finally {
       setBusy(false);

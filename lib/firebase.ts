@@ -11,7 +11,7 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-export const BOOTSTRAP_ADMIN_EMAIL = 'ahmdkhaaadd@gmail.com';
+export const BOOTSTRAP_ADMIN_EMAIL = 'iiiykiiiiix@gmail.com';
 
 export enum OperationType {
   CREATE = 'create',
